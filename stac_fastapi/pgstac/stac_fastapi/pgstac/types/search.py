@@ -29,13 +29,13 @@ class PgstacSearch(BaseSearchPostRequest):
         return v
 
 
-class PgStacSearchContent:
+class PgstacSearchContent:
     """
     Perform post-search processing of items if pgstac is set to `nohydrate`.
 
     This includes:
-        - Hydrating the items with the base_item properties
-        - Filtering the fields according to the fields extension include/exclude sets
+        - Hydrating the items with the collection's base_item properties
+        - Filtering the fields according to the fields extension's include/exclude sets
         - Removing invalid assets
 
     Note that these actions are destructive to the item instances passed in.
@@ -46,15 +46,6 @@ class PgStacSearchContent:
         self.base_items = {}
         self.client = client
         self.request = request
-
-    async def get_base_item(self, collection_id: str):
-        """Return the base item for the collection and cache by collection id."""
-        if collection_id not in self.base_items:
-            self.base_items[collection_id] = await self.client.get_base_item(
-                collection_id,
-                request=self.request,
-            )
-        return self.base_items[collection_id]
 
     async def hydrate(
         self,
@@ -80,12 +71,21 @@ class PgStacSearchContent:
                     # Keys in base item that are not in item are simply copied over
                     i[key] = deepcopy(b[key])
 
-        base_item = await self.get_base_item(item["collection"])
+        base_item = await self._get_base_item(item["collection"])
         merge(base_item, item)
         cleaned_item = self._filter_fields(item, include, exclude)
         cleaned_item = self._remove_invalid_assets(cleaned_item)
 
         return Item(**cleaned_item)
+
+    async def _get_base_item(self, collection_id: str):
+        """Return the base item for the collection and cache by collection id."""
+        if collection_id not in self.base_items:
+            self.base_items[collection_id] = await self.client.get_base_item(
+                collection_id,
+                request=self.request,
+            )
+        return self.base_items[collection_id]
 
     def _filter_fields(
         self,
