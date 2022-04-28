@@ -53,7 +53,7 @@ def filter_fields(
     in the return item.
     """
     if not include and not exclude:
-        return Item(**item)
+        return item
 
     item = dict(item)
 
@@ -70,24 +70,33 @@ def filter_fields(
             else:
                 clean_item[root] = item[root]
 
+    if not clean_item and not exclude:
+        # Base case on recursive includes, nothing to clean
+        return item
+    elif not clean_item:
+        # We have exclude fields, but nothing has been included,
+        # so exclude on item
+        clean_item = item
+
+    # For the item that has been built up for included fields, remove excluded fields
     for key_path in exclude or []:
         keys = key_path.split(".")
         root = keys[0]
-        if root in item:
-            if isinstance(item[root], dict) and len(keys) > 1:
-                # Recurse on "excludes" key paths notation for sub-keys
+        if root in clean_item:
+            if isinstance(clean_item[root], dict) and len(keys) > 1:
+                # Recurse on "excludes" key path notation for sub-keys
                 clean_item[root] = filter_fields(
-                    item[root], exclude=set([".".join(keys[1:])])
+                    clean_item[root], exclude=set([".".join(keys[1:])])
                 )
+                # If we removed all sub-keys of something included, don't
+                # add this root key at all
+                if not clean_item[root]:
+                    del clean_item[root]
             else:
                 # Item is marked for exclusion
-                clean_item = item
                 clean_item.pop(root, None)
-        else:
-            # Key is not in item, so preserve the item without modification
-            clean_item = item
 
-    return Item(**clean_item)
+    return clean_item
 
 
 def remove_invalid_assets(item: Item) -> None:
