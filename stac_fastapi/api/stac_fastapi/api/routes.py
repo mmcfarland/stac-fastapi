@@ -64,6 +64,9 @@ def create_async_endpoint(
             request_data: request_model,  # type:ignore
         ):
             """Endpoint."""
+            if func.__name__ == "create_item":
+                print("ci", request_data, flush=True)
+
             return _wrap_response(
                 await func(request_data, request=request), response_class
             )

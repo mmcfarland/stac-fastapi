@@ -1449,6 +1449,31 @@ async def test_filter_cql2text(app_client, load_test_data, load_test_collection)
     assert len(resp.json()["features"]) == 0
 
 
+async def test_tiler_cql2text_in(app_client, load_test_data, load_test_collection):
+    """Test GET search with cql2-text"""
+    item1 = load_test_data("test_item.json")
+    resp = await app_client.post(
+        f"/collections/{item1['collection']}/items", json=item1
+    )
+    assert resp.status_code == 200
+
+    item2 = load_test_data("test_item2.json")
+    resp = await app_client.post(
+        f"/collections/{item2['collection']}/items", json=item2
+    )
+
+    filter = f"id IN ('{item1['id']}', '{item2['id']}')"
+    params = {"filter": filter, "filter-lang": "cql2-text"}
+
+    resp = await app_client.get("/search", params=params)
+    resp_json = resp.json()
+    assert len(resp.json()["features"]) == 2
+
+    found_ids = [f["id"] for f in resp_json["features"]]
+    assert item1["id"] in found_ids
+    assert item2["id"] in found_ids
+
+
 async def test_item_merge_raster_bands(
     app_client, load_test2_item, load_test2_collection
 ):

@@ -28,7 +28,10 @@ class BaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     def create_item(
-        self, collection_id: str, item: stac_types.Item, **kwargs
+        self,
+        collection_id: str,
+        item: Dict,
+        **kwargs,
     ) -> Optional[Union[stac_types.Item, Response]]:
         """Create a new item.
 
@@ -138,7 +141,10 @@ class AsyncBaseTransactionsClient(abc.ABC):
 
     @abc.abstractmethod
     async def create_item(
-        self, collection_id: str, item: stac_types.Item, **kwargs
+        self,
+        collection_id: str,
+        item: Union[stac_types.Item, stac_types.ItemCollection],
+        **kwargs,
     ) -> Optional[Union[stac_types.Item, Response]]:
         """Create a new item.
 

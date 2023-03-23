@@ -1,11 +1,12 @@
 """transactions extension client."""
 
 import logging
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 
 import attr
 from buildpg import render
 from fastapi import HTTPException
+from pystac import Item, ItemCollection
 from starlette.responses import JSONResponse, Response
 
 from stac_fastapi.extensions.third_party.bulk_transactions import (
@@ -26,9 +27,23 @@ class TransactionsClient(AsyncBaseTransactionsClient):
     """Transactions extension specific CRUD operations."""
 
     async def create_item(
-        self, collection_id: str, item: stac_types.Item, **kwargs
+        self,
+        collection_id: str,
+        item: Union[stac_types.Item, stac_types.ItemCollection],
+        **kwargs,
     ) -> Optional[Union[stac_types.Item, Response]]:
         """Create item."""
+        print("---- Create Item ----", flush=True)
+        if item["type"] == "FeatureCollection":
+            print("---- Bulk Insert ----", flush=True)
+            print(item, flush=True)
+            bulk_client = BulkTransactionsClient()
+            items = {
+                i["id"]: Item(**i, collection=collection_id) for i in item["features"]
+            }
+            bulk_client.bulk_item_insert(items=items)
+            return None
+
         body_collection_id = item.get("collection")
         if body_collection_id is not None and collection_id != body_collection_id:
             raise HTTPException(

@@ -85,6 +85,7 @@ def add_exception_handlers(
     def request_validation_exception_handler(
         request: Request, exc: RequestValidationError
     ) -> JSONResponse:
+        print(exc.errors, flush=True)
         return JSONResponse(
             content=ErrorResponse(code=exc.__class__.__name__, description=str(exc)),
             status_code=status.HTTP_400_BAD_REQUEST,

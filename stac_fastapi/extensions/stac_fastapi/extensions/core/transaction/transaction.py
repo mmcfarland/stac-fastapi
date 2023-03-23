@@ -1,9 +1,11 @@
 """transaction extension."""
-from typing import List, Optional, Type, Union
+import abc
+from typing import Dict, List, Optional, Type, Union
 
 import attr
-from fastapi import APIRouter, Body, FastAPI
-from stac_pydantic import Collection, Item
+from fastapi import APIRouter, Body, FastAPI, Path
+from pydantic import BaseModel, Field
+from stac_pydantic import Collection, Item, ItemCollection
 from starlette.responses import JSONResponse, Response
 
 from stac_fastapi.api.models import CollectionUri, ItemUri
@@ -14,11 +16,34 @@ from stac_fastapi.types.core import AsyncBaseTransactionsClient, BaseTransaction
 from stac_fastapi.types.extension import ApiExtension
 
 
+class PostItemOrCollection(BaseModel):
+    """Create Item or Collection."""
+
+    collection_id: str = Path()
+    item: Union[Item, ItemCollection] = Body()
+
+
 @attr.s
 class PostItem(CollectionUri):
-    """Create Item."""
+    """Create Item or ItemCollection."""
 
     item: stac_types.Item = attr.ib(default=Body(None))
+
+
+@attr.s
+class PostItemA(CollectionUri):
+    """Create Item or ItemCollection."""
+
+    item: Union[stac_types.Item, stac_types.ItemCollection] = attr.ib(
+        default=Body(None)
+    )
+
+
+@attr.s
+class PostItemCollection(CollectionUri):
+    """Create Item or ItemCollection."""
+
+    item: Union[Item, ItemCollection] = attr.ib(default=Body(None))
 
 
 @attr.s
@@ -64,12 +89,14 @@ class TransactionExtension(ApiExtension):
         self.router.add_api_route(
             name="Create Item",
             path="/collections/{collection_id}/items",
-            response_model=Item if self.settings.enable_response_models else None,
+            response_model=Optional[Item]
+            if self.settings.enable_response_models
+            else None,
             response_class=self.response_class,
             response_model_exclude_unset=True,
             response_model_exclude_none=True,
             methods=["POST"],
-            endpoint=create_async_endpoint(self.client.create_item, PostItem),
+            endpoint=create_async_endpoint(self.client.create_item, PostItemA),
         )
 
     def register_update_item(self):
