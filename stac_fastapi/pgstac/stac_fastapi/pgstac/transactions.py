@@ -26,9 +26,22 @@ class TransactionsClient(AsyncBaseTransactionsClient):
     """Transactions extension specific CRUD operations."""
 
     async def create_item(
-        self, collection_id: str, item: stac_types.Item, **kwargs
+        self,
+        collection_id: str,
+        item: Union[stac_types.Item, stac_types.ItemCollection],
+        **kwargs,
     ) -> Optional[Union[stac_types.Item, Response]]:
         """Create item."""
+        # Test how item was parsed
+        if item["type"] == "FeatureCollection":
+            # Will fail on Union[stac_types.Item, stac_types.ItemCollection]
+            assert "features" in item
+        elif item["type"] == "Feature":
+            # Will fail on Union[stac_types.ItemCollection, stac_types.Item]
+            assert "geometry" in item
+
+        logging.info(f"create_item: {item}")
+
         body_collection_id = item.get("collection")
         if body_collection_id is not None and collection_id != body_collection_id:
             raise HTTPException(
