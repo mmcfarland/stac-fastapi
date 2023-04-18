@@ -32,6 +32,8 @@ class TransactionsClient(AsyncBaseTransactionsClient):
         **kwargs,
     ) -> Optional[Union[stac_types.Item, Response]]:
         """Create item."""
+        print("create_item: ", item)
+        print("=-----------------")
         # Test how item was parsed
         if item["type"] == "FeatureCollection":
             # Will fail on Union[stac_types.Item, stac_types.ItemCollection]
