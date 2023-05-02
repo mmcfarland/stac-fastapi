@@ -32,17 +32,16 @@ class TransactionsClient(AsyncBaseTransactionsClient):
         **kwargs,
     ) -> Optional[Union[stac_types.Item, Response]]:
         """Create item."""
-        print("create_item: ", item)
-        print("=-----------------")
-        # Test how item was parsed
+        print("---- Create Item ----", flush=True)
         if item["type"] == "FeatureCollection":
-            # Will fail on Union[stac_types.Item, stac_types.ItemCollection]
-            assert "features" in item
-        elif item["type"] == "Feature":
-            # Will fail on Union[stac_types.ItemCollection, stac_types.Item]
-            assert "geometry" in item
-
-        logging.info(f"create_item: {item}")
+            print("---- Bulk Insert ----", flush=True)
+            print(item, flush=True)
+            bulk_client = BulkTransactionsClient()
+            items = Items(
+                items={i["id"]: stac_types.Item(**i) for i in item["features"]}
+            )
+            await bulk_client.bulk_item_insert(items=items, request=kwargs["request"])
+            return None
 
         body_collection_id = item.get("collection")
         if body_collection_id is not None and collection_id != body_collection_id:
@@ -147,6 +146,9 @@ class BulkTransactionsClient(AsyncBaseBulkTransactionsClient):
         """Bulk item insertion using pgstac."""
         request = kwargs["request"]
         pool = request.app.state.writepool
+
+        print("---- Bulk Insert ----", flush=True)
+        print(items.items, flush=True)
         items = list(items.items.values())
         await dbfunc(pool, "create_items", items)
 
